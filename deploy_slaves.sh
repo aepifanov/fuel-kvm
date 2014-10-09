@@ -14,7 +14,7 @@ CONF='
        {"opt":"c",
         "opt_long": "cpu",
         "arg": ":",
-        "man": "CPU Number for VM. (Default: 1)"
+        "man": "CPU Number for VM. (Default: 2)"
        },
        {"opt":"r",
         "opt_long": "ram",
