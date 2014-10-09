@@ -1,0 +1,12 @@
+<volume>
+  <name>%name</name>
+  <capacity>%size</capacity>
+  <allocation>0</allocation>
+  <target>
+    <format type='qcow2'/>
+  </target>
+  <backingStore>
+    <path>/var/lib/libvirt/images/trusty-server-cloudimg-amd64-disk1.qcow2</path>
+    <format type='qcow2'/>
+  </backingStore>
+</volume>
