@@ -1,4 +1,5 @@
 #!/bin/bash
+
 source functions.sh
 source bash_arg_parser/parse_args.sh
 
@@ -40,6 +41,11 @@ CONF='
         "opt_long": "storage_vlan",
         "arg": ":",
         "man": "Storage VLAN ID. (mandatory option)"
+       },
+       {"opt":"l",
+        "opt_long": "pool",
+        "arg": ":",
+        "man": "Storage pool name. (default: big)"
        }
      ]
     }'
@@ -64,6 +70,7 @@ function parse_args {
             -p|--pxe_vlan)         PXE_VLAN=$2 ; shift 2 ;;
             -m|--management_vlan) MGMT_VLAN=$2 ; shift 2 ;;
             -s|--storage_vlan)    STRG_VLAN=$2 ; shift 2 ;;
+            -l|--pool)                 POOL=$2 ; shift 2 ;;
 
             # Exit
             --) shift ; break ;;
@@ -92,6 +99,10 @@ DISK=${DISK:-"40G"}
 PXE_VLAN=${PXE_VLAN?"--pxe_vlan is mandatory option. Use --help for more details"}
 MGMT_VLAN=${MGMT_VLAN?"--management_vlan is mandatory option. Use --help for more details"}
 STRG_VLAN=${STRG_VLAN?"--storage_vlan is mandatory option. Use --help for more details"}
+POOL=${POOL:-"big"}
+
+IMAGE_PATH=$(virsh pool-dumpxml ${POOL} | awk -F "[><]" '/path/ {print($3)}')
+IMAGE_PATH=${IMAGE_PATH:-"/var/lib/libvirt/images"}
 
 ### Confirm parameters
 
@@ -110,7 +121,7 @@ echo
 ### Start creating
 
 
-create_disk ${NAME} ${DISK}
+create_disk ${NAME} ${DISK} ${POOL}
 
 virt-install \
   --name=${NAME} \
@@ -122,7 +133,7 @@ virt-install \
   --virt-type=kvm \
   --pxe \
   --boot network,hd \
-  --disk "/var/lib/libvirt/images/${NAME}.qcow2" \
+  --disk "${IMAGE_PATH}/${NAME}.qcow2" \
   --noautoconsole \
   --network network=internal,model=virtio \
   --network network=internal,model=virtio \

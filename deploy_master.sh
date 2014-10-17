@@ -37,6 +37,11 @@ CONF='
         "opt_long": "pxe_vlan",
         "arg": ":",
         "man": "PXE VLAN ID. (mandatory option)"
+       },
+       {"opt":"l",
+        "opt_long": "pool",
+        "arg": ":",
+        "man": "Storage pool name. (default: big)"
        }
      ]
     }'
@@ -60,6 +65,7 @@ function parse_args {
             -d|--disk)         DISK=$2 ; shift 2 ;;
             -i|--iso)           ISO=$2 ; shift 2 ;;
             -p|--pxe_vlan) PXE_VLAN=$2 ; shift 2 ;;
+            -l|--pool)         POOL=$2 ; shift 2 ;;
 
             # Exit
             --) shift ; break ;;
@@ -87,6 +93,7 @@ CPU=${CPU:-1}
 DISK=${DISK:-"40G"}
 PXE_VLAN=${PXE_VLAN?"--pxe_vlan is mandatory option. Use --help for more details"}
 ISO=${ISO:-"fuel.iso"}
+POOL=${POOL:-"big"}
 
 if [[ ! -f ${ISO} ]]
 then
@@ -95,7 +102,8 @@ then
     exit 1
 fi
 
-
+IMAGE_PATH=$(virsh pool-dumpxml ${POOL} | awk -F "[><]" '/path/ {print($3)}')
+IMAGE_PATH=${IMAGE_PATH:-"/var/lib/libvirt/images"}
 
 ### Confirm parameters
 
@@ -111,7 +119,7 @@ echo "       PXE VLAN: ${PXE_VLAN}"
 ### Start creating
 
 
-create_disk ${NAME} ${DISK}
+create_disk ${NAME} ${DISK} ${POOL}
 
 echo "Starting Fuel master vm..."
 
@@ -123,7 +131,7 @@ virt-install \
   --os-type=linux \
   --os-variant=rhel6 \
   --virt-type=kvm \
-  --disk "/var/lib/libvirt/images/${NAME}.qcow2" \
+  --disk "${IMAGE_PATH}/${NAME}.qcow2" \
   --cdrom "${ISO}" \
   --noautoconsole \
   --network network=internal,model=virtio \
