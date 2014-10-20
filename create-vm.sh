@@ -25,7 +25,7 @@ CONF='
        {"opt":"d",
         "opt_long": "disk",
         "arg": ":",
-        "man": "Disk size in GB for VM. (Default: 40G)"
+        "man": "Disk size in GB for VM. (Default: 40)"
        },
        {"opt":"x",
         "opt_long": "xml",
@@ -76,7 +76,7 @@ NAME=${NAME?"--name is mandatory option. use --help for more details"}
 NAME=${NAME}
 RAM=${RAM:-8192}
 CPU=${CPU:-4}
-DISK=${DISK:-"40G"}
+DISK=${DISK:-"40"}
 XML=${XML:-${NAME}".xml"}
 POOL=${POOL:-"big"}
 
@@ -87,9 +87,8 @@ virsh destroy ${NAME}
 virsh undefine ${NAME}
 virsh vol-delete --pool ${POOL} ${IMAGE_PATH}/${NAME}.qcow2
 
-create_disk ${NAME} ${DISK} ${POOL}
-#sed -e "s/%name/${NAME}.qcow2/g" -e "s/%size/${DISK}/g" ${XML} > "/tmp/${NAME}.xml"
-#virsh vol-create-as --name ${IMAGE_PATH}/${NAME}.qcow2 --pool ${POOL}
+sed -e "s/%name/${NAME}.qcow2/g" -e "s/%size/${DISK}/g" ${XML} > "/tmp/${NAME}.xml"
+virsh vol-create  --pool ${POOL} "/tmp/${NAME}.xml"
 
 virt-install \
   --name=${NAME} \

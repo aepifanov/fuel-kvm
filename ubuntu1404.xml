@@ -1,6 +1,6 @@
 <volume>
   <name>%name</name>
-  <capacity>%size</capacity>
+  <capacity unit="G">%size</capacity>
   <allocation>0</allocation>
   <target>
     <format type='qcow2'/>
