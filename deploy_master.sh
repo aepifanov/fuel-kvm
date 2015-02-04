@@ -87,7 +87,7 @@ then
 fi
 
 NAME=${NAME?"--name is mandatory option. use --help for more details"}
-NAME=${NAME:-"test"}-fuel-master
+NAME=${NAME:-"test"}-fuel
 RAM=${RAM:-2048}
 CPU=${CPU:-1}
 DISK=${DISK:-"40G"}

@@ -91,8 +91,10 @@ then
     exit 1
 fi
 
+MAC=$(python -c 'from virtinst.util import *; print randomMAC(type="qemu")')
+MAC_END=$(echo $MAC | awk -F":" '{print $5"-"$6}')
 NAME=${NAME?"--name is mandatory option. use --help for more details"}
-NAME=${NAME}-fuel-slave-$RANDOM
+NAME=${NAME}-mos_$MAC_END
 RAM=${RAM:-4096}
 CPU=${CPU:-2}
 DISK=${DISK:-"40G"}
@@ -135,6 +137,7 @@ virt-install \
   --boot network,hd \
   --disk "${IMAGE_PATH}/${NAME}.qcow2" \
   --noautoconsole \
+  --mac ${MAC} \
   --network network=internal,model=virtio \
   --network network=internal,model=virtio \
   --network network=internal,model=virtio \
