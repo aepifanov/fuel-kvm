@@ -43,7 +43,7 @@ function setup_iso {
 	mount /dev/os/root ${_TMPD}
 	sed "s/GATEWAY=.*/GATEWAY=\"${_GW}\"/g" -i ${_TMPD}/etc/sysconfig/network
     #Fuel 6.1 displays network setup menu by default
-    sed -i 's/showmenu=yes/showmenu=no/g' ${TMPD}/root/.showfuelmenu
+    sed -i 's/showmenu=yes/showmenu=no/g' ${_TMPD}/root/.showfuelmenu
     echo "
 DEVICE=eth1
 TYPE=Ethernet
