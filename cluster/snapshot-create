@@ -1,9 +1,0 @@
-#!/bin/bash
-
-source cluster-functions.sh
-
-parse-args $@
-
-SNAPSHOT=${2?"Snapshot name is mandatory option. Use --help for more details."}
-
-snapshot-create "$VMs" $SNAPSHOT
