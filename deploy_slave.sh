@@ -16,7 +16,7 @@ CONF='
        {
         "name":"cpu",
         "short":"c",
-        "default": "4",
+        "default": "2",
         "required": "True",
         "help": "CPU Number for VM"
        },
@@ -24,7 +24,7 @@ CONF='
        {
         "name":"ram",
         "short":"r",
-        "default": "8192",
+        "default": "4096",
         "required": "True",
         "help": "RAM in MB for VM"
        },
@@ -44,13 +44,19 @@ CONF='
         "reuired": "True",
         "help": "Storage pool name. big: HDD or default: SSD"
        },
-     "ISO":
+     "MGMT_VLAN":
        {
-        "name":"iso",
-        "short":"i",
-        "default": "fuel.iso",
+        "name":"management_vlan",
+        "short":"m",
         "reuired": "True",
-        "help": "Path to FUEL ISO file"
+        "help": "Management VLAN ID"
+       },
+     "STRG_VLAN":
+       {
+        "name":"storage_vlan",
+        "short":"s",
+        "reuired": "True",
+        "help": "Storage VLAN ID"
        },
      "PXE_VLAN":
        {
@@ -64,6 +70,7 @@ CONF='
 
 arg_parser "${CONF}" "$*" bash_arg_parser
 
+
 if [[ ${USER} != "root" ]]
 then
     echo "This script should be run with root priveleges."
@@ -71,14 +78,9 @@ then
     exit 1
 fi
 
-NAME=${PREFIX}-${PXE_VLAN}-fuel
-
-if [[ ! -f ${ISO} ]]
-then
-    echo "ISO file \"${ISO}\" does not exist!"
-    echo "Terminating..."
-    exit 1
-fi
+MAC=$(python -c 'from virtinst.util import *; print randomMAC(type="qemu")')
+MAC_END=$(echo $MAC | awk -F":" '{print $5"-"$6}')
+NAME=${PREFIX}-${PXE_VLAN}-mos_$MAC_END
 
 IMAGE_PATH=$(virsh pool-dumpxml ${POOL} | awk -F "[><]" '/path/ {print($3)}')
 IMAGE_PATH=${IMAGE_PATH:-"/var/lib/libvirt/images"}
@@ -92,14 +94,15 @@ echo "            CPU: ${CPU}"
 echo "            RAM: ${RAM}"
 echo "           DISK: ${DISK}"
 echo "       PXE VLAN: ${PXE_VLAN}"
+echo "Management VLAN: ${MGMT_VLAN}"
+echo "   Storage VLAN: ${STRG_VLAN}"
+echo
 
 
 ### Start creating
 
 
 create_disk ${NAME} ${DISK} ${POOL}
-
-echo "Starting Fuel master vm..."
 
 virt-install \
   --name=${NAME} \
@@ -109,28 +112,22 @@ virt-install \
   --os-type=linux \
   --os-variant=rhel6 \
   --virt-type=kvm \
+  --pxe \
+  --boot network,hd \
   --disk "${IMAGE_PATH}/${NAME}.qcow2" \
-  --cdrom "${ISO}" \
   --noautoconsole \
+  --mac ${MAC} \
+  --network network=internal,model=virtio \
+  --network network=internal,model=virtio \
   --network network=internal,model=virtio \
   --network network=internal,model=virtio \
   --graphics vnc,listen=0.0.0.0
 
-GATEWAY_IP=172.18.161.1
+virsh destroy ${NAME}
+setup_network ${NAME} ${PXE_VLAN}
+setup_network ${NAME} ${MGMT_VLAN}
+setup_network ${NAME} ${STRG_VLAN}
 
-while (true)
-do
-    STATUS=$(virsh dominfo ${NAME} | grep State | awk -F " " '{print $2}')
-    if [ ${STATUS} == 'shut' ]
-    then
-        setup_iso ${NAME} ${GATEWAY_IP}
-        setup_network ${NAME} ${PXE_VLAN}
-        virsh start ${NAME}
-        break
-    fi
-
-    sleep 10
-done
-
-echo "Running Fuel master deployment..."
+virsh start ${NAME}
+echo "Started fuel-slave ${NAME}"
 
