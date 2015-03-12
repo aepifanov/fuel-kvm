@@ -5,10 +5,11 @@ function create_disk {
     local _DISK=${2:-DISK}
     local _POOL=${3:-POOL}
 
+    _DISK=${DISK}G
     echo "Creating storage..."
     echo -e "Name: \"${_NAME}\"\nSize: ${_DISK}"
 
-    virsh vol-create-as --name $_NAME.qcow2 --capacity $_DISK --format qcow2 --allocation $_DISK --pool ${_POOL}
+    virsh vol-create-as --name ${_NAME}.qcow2 --capacity ${_DISK} --format qcow2 --allocation ${_DISK} --pool ${_POOL}
 }
 
 function setup_network {
