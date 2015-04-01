@@ -114,7 +114,7 @@ virt-install \
   --virt-type=kvm \
   --pxe \
   --boot network,hd \
-  --disk "${IMAGE_PATH}/${NAME}.qcow2" \
+  --disk "${IMAGE_PATH}/${NAME}.qcow2",serial=$(uuidgen) \
   --noautoconsole \
   --mac ${MAC} \
   --network network=internal,model=virtio \

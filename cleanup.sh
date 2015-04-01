@@ -31,7 +31,7 @@ if [ ! -z $master ]
 then
     virsh destroy $master
     virsh undefine $master
-    virsh vol-delete --pool default $PREFIX-fuel.qcow2
+    virsh vol-delete --pool big $PREFIX-fuel.qcow2
 fi
 
 echo "Deleting slaves..."
@@ -44,10 +44,10 @@ do
    virsh undefine $i
 done
 
-for j in $(virsh vol-list --pool default | grep $PREFIX-mos | awk '{print $1}')
+for j in $(virsh vol-list --pool big | grep $PREFIX-mos | awk '{print $1}')
 do
    echo $j
-   virsh vol-delete --pool default $j
+   virsh vol-delete --pool big $j
    sleep 2
 done
 
