@@ -1,0 +1,26 @@
+#!/bin/bash
+
+TOPDIR=$(dirname "$0")
+
+source "$TOPDIR/lib/cluster-lib.sh"
+source "$TOPDIR/lib/bash_arg_parser/arg_parser.sh"
+
+CONF='
+    {
+     "PREFIX":
+       {
+        "name":"prefix",
+        "short":"x",
+        "required": "True",
+        "help": "VM name"
+       }
+    }'
+
+
+### Argument parsing
+
+WORKDIR="${TOPDIR}/lib/bash_arg_parser"
+arg_parser "${CONF}" "$*"
+
+
+execute $ARGS

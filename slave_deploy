@@ -1,7 +1,9 @@
 #!/bin/bash
 
-source functions.sh
-source bash_arg_parser/arg_parser.sh
+TOPDIR=$(dirname "$0")
+
+source "$TOPDIR/lib/functions.sh"
+source "$TOPDIR/lib/bash_arg_parser/arg_parser.sh"
 
 CONF='
     {
@@ -68,22 +70,20 @@ CONF='
     }'
 
 
-arg_parser "${CONF}" "$*" bash_arg_parser
+### Argument parsing
+
+WORKDIR="${TOPDIR}/lib/bash_arg_parser"
+arg_parser "${CONF}" "$*"
 
 
-if [[ ${USER} != "root" ]]
-then
-    echo "This script should be run with root priveleges."
-    echo "Terminating..."
-    exit 1
-fi
+### Setting up variables
 
-MAC=$(python -c 'from virtinst.util import *; print randomMAC(type="qemu")')
-MAC_END=$(echo $MAC | awk -F":" '{print $5"-"$6}')
-NAME=${PREFIX}-${PXE_VLAN}-mos_$MAC_END
+generate_mac
 
-IMAGE_PATH=$(virsh pool-dumpxml ${POOL} | awk -F "[><]" '/path/ {print($3)}')
-IMAGE_PATH=${IMAGE_PATH:-"/var/lib/libvirt/images"}
+NAME="${PREFIX}-${PXE_VLAN}-mos_$MAC_END"
+
+fail_if_not_root
+
 
 ### Confirm parameters
 
@@ -101,33 +101,13 @@ echo
 
 ### Start creating
 
+create_volume  "${NAME}" "${DISK}" "${POOL}"
 
-create_disk ${NAME} ${DISK} ${POOL}
 
-virt-install \
-  --name=${NAME} \
-  --cpu host \
-  --ram=${RAM} \
-  --vcpus=${CPU},cores=${CPU} \
-  --os-type=linux \
-  --os-variant=rhel6 \
-  --virt-type=kvm \
-  --pxe \
-  --boot network,hd \
-  --disk "${IMAGE_PATH}/${NAME}.qcow2",serial=$(uuidgen) \
-  --noautoconsole \
-  --mac ${MAC} \
-  --network network=internal,model=virtio \
-  --network network=internal,model=virtio \
-  --network network=internal,model=virtio \
-  --network network=internal,model=virtio \
-  --graphics vnc,listen=0.0.0.0
+set_image_path "${NAME}" "${POOL}"
 
-virsh destroy ${NAME}
-setup_network ${NAME} ${PXE_VLAN}
-setup_network ${NAME} ${MGMT_VLAN}
-setup_network ${NAME} ${STRG_VLAN}
-
-virsh start ${NAME}
-echo "Started fuel-slave ${NAME}"
+deploy_slave "${NAME}" "${CPU}" "${RAM}" \
+             "${MAC}" \
+             "${PXE_VLAN}" "${MGMT_VLAN}" "${STRG_VLAN}" \
+             "${IMAGE_PATH}"
 

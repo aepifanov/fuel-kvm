@@ -1,0 +1,63 @@
+#!/bin/bash
+
+TOPDIR=$(dirname "$0")
+
+source "$TOPDIR/lib/functions.sh"
+source "$TOPDIR/lib/bash_arg_parser/arg_parser.sh"
+
+CONF='
+    {
+     "PREFIX":
+       {
+        "name":"prefix",
+        "short":"x",
+        "required": "True",
+        "help": "VM name"
+       },
+     "POOL":
+       {
+        "name":"pool",
+        "short":"p",
+        "default": "big",
+        "reuired": "True",
+        "help": "Storage pool name. big: HDD or default: SSD"
+       }
+    }'
+
+
+### Argument parsing
+
+WORKDIR="${TOPDIR}/lib/bash_arg_parser"
+arg_parser "${CONF}" "$*"
+
+
+### Find VMs with our PREFIX
+
+VMs=$(virsh list --all | grep "${PREFIX}" | awk '{print $2}')
+VMs=${VMs:?"No one VM with this prefix: '${PREFIX}'"}
+
+
+echo "You are going to delete all VMs with the following prefix:"
+echo "${VMs}"
+echo "Do you wish to proceed?"
+select ANS in Yes No; do
+    case $ANS in
+        [yY1]*)
+            break;
+            ;;
+        [nN2]*|exit)
+            exit 0
+            ;;
+        *)
+            echo "try again: Yes, No"
+    esac
+done
+
+
+### Deleting
+
+for VM in ${VMs}
+do
+    echo "Deleting ${VM} ..."
+    vm_delete "${VM}" "${POOL}"
+done

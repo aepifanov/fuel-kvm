@@ -1,7 +1,9 @@
 #!/bin/bash
 
-source functions.sh
-source bash_arg_parser/arg_parser.sh
+TOPDIR=$(dirname "$0")
+
+source "$TOPDIR/lib/functions.sh"
+source "$TOPDIR/lib/bash_arg_parser/arg_parser.sh"
 
 CONF='
     {
@@ -32,7 +34,7 @@ CONF='
        {
         "name":"disk",
         "short":"d",
-        "default": "40",
+        "default": "60",
         "required": "True",
         "help": "Disk size in GB for VM"
        },
@@ -52,6 +54,14 @@ CONF='
         "reuired": "True",
         "help": "Path to FUEL ISO file"
        },
+     "GATEWAY_IP":
+       {
+        "name":"gateway",
+        "short":"g",
+        "default": "172.18.161.1",
+        "reuired": "False",
+        "help": "Default Gateway IP"
+       },
      "PXE_VLAN":
        {
         "name":"vlan",
@@ -62,26 +72,22 @@ CONF='
     }'
 
 
-arg_parser "${CONF}" "$*" bash_arg_parser
+### Argument parsing
 
-if [[ ${USER} != "root" ]]
-then
-    echo "This script should be run with root priveleges."
-    echo "Terminating..."
-    exit 1
-fi
+WORKDIR="${TOPDIR}/lib/bash_arg_parser"
+arg_parser "${CONF}" "$*"
 
-NAME=${PREFIX}-${PXE_VLAN}-fuel
 
-if [[ ! -f ${ISO} ]]
-then
-    echo "ISO file \"${ISO}\" does not exist!"
-    echo "Terminating..."
-    exit 1
-fi
+### Setting up variables
 
-IMAGE_PATH=$(virsh pool-dumpxml ${POOL} | awk -F "[><]" '/path/ {print($3)}')
-IMAGE_PATH=${IMAGE_PATH:-"/var/lib/libvirt/images"}
+NAME="${PREFIX}-${PXE_VLAN}-fuel"
+
+ISO="$TOPDIR/$ISO"
+
+fail_if_not_root
+
+is_iso_exist "${ISO}"
+
 
 ### Confirm parameters
 
@@ -96,41 +102,12 @@ echo "       PXE VLAN: ${PXE_VLAN}"
 
 ### Start creating
 
+create_volume  "${NAME}" "${DISK}" "${POOL}"
 
-create_disk ${NAME} ${DISK} ${POOL}
+set_image_path "${NAME}" "${POOL}"
 
-echo "Starting Fuel master vm..."
-
-virt-install \
-  --name=${NAME} \
-  --cpu host \
-  --ram=${RAM} \
-  --vcpus=${CPU},cores=${CPU} \
-  --os-type=linux \
-  --os-variant=rhel6 \
-  --virt-type=kvm \
-  --disk "${IMAGE_PATH}/${NAME}.qcow2" \
-  --cdrom "${ISO}" \
-  --noautoconsole \
-  --network network=internal,model=virtio \
-  --network network=internal,model=virtio \
-  --graphics vnc,listen=0.0.0.0
-
-GATEWAY_IP=172.18.161.1
-
-while (true)
-do
-    STATUS=$(virsh dominfo ${NAME} | grep State | awk -F " " '{print $2}')
-    if [ ${STATUS} == 'shut' ]
-    then
-        setup_iso ${NAME} ${GATEWAY_IP}
-        setup_network ${NAME} ${PXE_VLAN}
-        virsh start ${NAME}
-        break
-    fi
-
-    sleep 10
-done
-
-echo "Running Fuel master deployment..."
+deploy_fuel    "${NAME}" "${CPU}" "${RAM}" \
+               "${ISO}"  "${GATEWAY_IP}" \
+               "${PXE_VLAN}" \
+               "${IMAGE_PATH}"
 
