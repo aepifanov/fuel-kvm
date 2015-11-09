@@ -1,0 +1,89 @@
+#!/bin/bash
+
+TOPDIR=$(dirname "$0")
+
+source "$TOPDIR/lib/functions.sh"
+source "$TOPDIR/lib/bash_arg_parser/arg_parser.sh"
+
+CONF='
+{
+    "NAME":
+    {
+        "name":"name",
+            "short":"n",
+            "required": "True",
+            "help": "VM name"
+        },
+    "CPU":
+    {
+        "name":"cpu",
+        "short":"c",
+        "default": "4",
+        "required": "True",
+        "help": "CPU Number for VM"
+    },
+    "RAM":
+    {
+        "name":"ram",
+        "short":"r",
+        "default": "8192",
+        "required": "True",
+        "help": "RAM in MB for VM"
+    },
+    "DISK":
+    {
+        "name":"disk",
+        "short":"d",
+        "default": "40",
+        "required": "True",
+        "help": "Disk size in GB for VM"
+    },
+    "POOL":
+    {
+        "name":"pool",
+        "short":"p",
+        "default": "big",
+        "reuired": "True",
+        "help": "Storage pool name. big: HDD or default: SSD"
+    },
+    "IMAGE":
+    {
+        "name":"img",
+        "short":"i",
+        "default": "/var/lib/libvirt/images/trusty-server-cloudimg-amd64-disk1.qcow2",
+        "required": "True",
+        "help": "XML configuration for VM"
+    }
+}'
+
+
+### Argument parsing
+
+WORKDIR="${TOPDIR}/lib/bash_arg_parser"
+arg_parser "${CONF}" "$*"
+
+
+### Setting up variables
+
+fail_if_not_root
+
+
+### Confirm parameters
+
+echo
+echo "Your parameters are the following:"
+echo "           Name: ${NAME}"
+echo "            CPU: ${CPU}"
+echo "            RAM: ${RAM}"
+echo "           DISK: ${DISK}"
+
+
+### Start creating
+
+create_volume_from_img  "${NAME}" "${DISK}" "${POOL}" \
+                        "${IMAGE}"
+
+set_image_path "${NAME}" "${POOL}"
+
+deploy_vm      "${NAME}" "${CPU}" "${RAM}" \
+               "${IMAGE_PATH}"

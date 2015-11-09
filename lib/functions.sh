@@ -58,6 +58,34 @@ function create_volume
         --pool       "${POOL}"
 }
 
+function create_volume_from_img
+{
+    local NAME=${1:?"Please specify Name."}
+    local DISK=${2:?"Please specify Disk."}
+    local POOL=${3:?"Please specify Pool."}
+    local IMG=${4:?"Please specify Image."}
+
+    DISK="${DISK}"
+    echo "Creating storage..."
+    echo -e "Name: \"${NAME}\"\nSize: ${DISK}"
+
+    echo "<volume>
+  <name>${NAME}.qcow2</name>
+  <capacity unit='G'>${DISK}</capacity>
+  <allocation>0</allocation>
+  <target>
+    <format type='qcow2'/>
+  </target>
+  <backingStore>
+    <path>${IMG}</path>
+  </backingStore>
+</volume>" > "/tmp/${NAME}.xml"
+
+    virsh vol-create \
+        --pool ${POOL} \
+        "/tmp/${NAME}.xml"
+}
+
 function setup_network {
 
 
@@ -186,6 +214,29 @@ function deploy_slave
     virsh start   "${NAME}"
 
     echo "Started fuel-slave ${NAME}"
+}
+
+function deploy_vm
+{
+    local NAME=${1:?"Please specify Name"}
+    local CPU=${2:?"Please specify CPU"}
+    local RAM=${3:?"Please specify RAM"}
+    local IMAGE_PATH=${4:?"Please specify Image path"}
+
+    virt-install \
+        --name  "${NAME}" \
+        --cpu   host \
+        --ram   "${RAM}" \
+        --vcpus "${CPU},cores=${CPU}" \
+        --disk  "${IMAGE_PATH},serial=$(uuidgen)" \
+        --boot  hd \
+        --noautoconsole \
+        --graphics   vnc,listen=0.0.0.0 \
+        --os-type    linux \
+        --virt-type  kvm \
+        --network    network=internal,model=virtio \
+
+    echo "Started VM ${NAME}"
 }
 
 function snapshot_delete_all
