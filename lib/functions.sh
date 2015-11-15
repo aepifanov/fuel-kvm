@@ -78,6 +78,7 @@ function create_volume_from_img
   </target>
   <backingStore>
     <path>${IMG}</path>
+    <format type='qcow2'/>
   </backingStore>
 </volume>" > "/tmp/${NAME}.xml"
 
