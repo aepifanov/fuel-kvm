@@ -18,7 +18,7 @@ CONF='
        {
         "name":"pool",
         "short":"p",
-        "default": "big",
+        "default": "default",
         "reuired": "True",
         "help": "Storage pool name. big: HDD or default: SSD"
        }

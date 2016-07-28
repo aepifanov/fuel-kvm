@@ -20,7 +20,7 @@ CONF='
 ### Argument parsing
 
 WORKDIR="${TOPDIR}/lib/bash_arg_parser"
-arg_parser "${CONF}" "$*"
+parse-args $@
 
 
 execute $ARGS
